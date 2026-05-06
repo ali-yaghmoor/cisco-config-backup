@@ -1,4 +1,5 @@
 import os
+import difflib
 import yaml
 import argparse
 from datetime import datetime
@@ -33,6 +34,31 @@ def save_config(name, config):
     return path
 
 
+def get_last_backup(name):
+    if not os.path.exists(BACKUP_DIR):
+        return None
+    files = sorted(f for f in os.listdir(BACKUP_DIR) if f.startswith(name + "_"))
+    if not files:
+        return None
+    with open(f"{BACKUP_DIR}/{files[-1]}") as f:
+        return f.read()
+
+
+def diff_configs(name, old, new):
+    old_lines = old.splitlines(keepends=True)
+    new_lines = new.splitlines(keepends=True)
+    diff = list(difflib.unified_diff(old_lines, new_lines, fromfile="previous", tofile="current"))
+    if diff:
+        print(f"  [{name}] config changed:")
+        # cap output so it doesn't flood the terminal on big changes
+        for line in diff[:60]:
+            print("   " + line, end="")
+        if len(diff) > 60:
+            print(f"\n   ... and {len(diff) - 60} more lines")
+    else:
+        print(f"  [{name}] no changes since last backup")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="devices.yaml")
@@ -44,9 +70,12 @@ def main():
         name = device["name"]
         print(f"connecting to {name} ({device['host']})...")
         try:
+            last = get_last_backup(name)
             config = pull_config(device)
             saved = save_config(name, config)
             print(f"  saved -> {saved}")
+            if last:
+                diff_configs(name, last, config)
         except Exception as e:
             print(f"  failed: {e}")
 
