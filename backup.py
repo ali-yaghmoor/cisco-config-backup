@@ -4,6 +4,7 @@ import yaml
 import argparse
 from datetime import datetime
 from netmiko import ConnectHandler
+import boto3
 
 BACKUP_DIR = "backups"
 
@@ -59,9 +60,17 @@ def diff_configs(name, old, new):
         print(f"  [{name}] no changes since last backup")
 
 
+def upload_to_s3(local_path, bucket):
+    s3 = boto3.client("s3")
+    key = "cisco-backups/" + os.path.basename(local_path)
+    s3.upload_file(local_path, bucket, key)
+    print(f"  uploaded to s3://{bucket}/{key}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="devices.yaml")
+    parser.add_argument("--s3-bucket", help="upload backups to this s3 bucket")
     args = parser.parse_args()
 
     devices = load_devices(args.config)
@@ -76,6 +85,8 @@ def main():
             print(f"  saved -> {saved}")
             if last:
                 diff_configs(name, last, config)
+            if args.s3_bucket:
+                upload_to_s3(saved, args.s3_bucket)
         except Exception as e:
             print(f"  failed: {e}")
 
