@@ -19,6 +19,16 @@ pip install -r requirements.txt
 
 Edit `devices.yaml` with your device list:
 
+First copy the example configuration:
+
+```bash
+cp devices.example.yaml devices.yaml
+```
+
+Then edit devices.yaml with your real device information.
+
+Do not commit real credentials to git.
+
 ```yaml
 devices:
   - name: core-sw-01
