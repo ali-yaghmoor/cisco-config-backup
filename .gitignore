@@ -3,3 +3,4 @@ backups/
 __pycache__/
 .env
 venv/
+devices.yaml

@@ -20,6 +20,7 @@ def pull_config(device):
         host=device["host"],
         username=device["username"],
         password=device["password"],
+        conn_timeout=10,
     )
     config = conn.send_command("show running-config")
     conn.disconnect()
